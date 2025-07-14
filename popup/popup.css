@@ -120,6 +120,11 @@ button:active {
   background: var(--button-bg);
 }
 
+#changeApiKey:hover {
+  background: var(--button-bg);
+  opacity: 0.9;
+}
+
 #removeApiKey {
   background: var(--error-color);
 }
