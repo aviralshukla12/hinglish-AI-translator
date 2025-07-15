@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   
     // Show API key is configured
-    apiKeyStatus.textContent = '✓ API Key Configured';
+    apiKeyStatus.textContent = 'API Key Configured';
     apiKeyStatus.style.color = '#4CAF50';
   
     // Load existing translation settings
@@ -33,10 +33,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     toggleApiKey.addEventListener('click', () => {
       if (apiKeyInput.type === 'password') {
         apiKeyInput.type = 'text';
-        toggleApiKey.textContent = '🙈';
+        toggleApiKey.innerText = 'Hide';
+        
       } else {
         apiKeyInput.type = 'password';
-        toggleApiKey.textContent = '👁️';
+        toggleApiKey.innerText = 'Show';
       }
     });
   
@@ -81,8 +82,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         showSuccess('API key saved successfully');
         apiKeyInput.value = '';
         apiKeyContainer.style.display = 'none';
-        apiKeyStatus.textContent = '✓ API Key Configured';
-        apiKeyStatus.style.color = '#4CAF50';
+        apiKeyStatus.textContent = 'API Key Configured';
+        apiKeyStatus.style.color = '';
       } catch (error) {
         console.error('API key validation error:', error);
         await chrome.storage.local.remove('groqApiKey');
