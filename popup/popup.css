@@ -1,3 +1,4 @@
+
 :root {
   --text-color: #202124;
   --bg-color: #ffffff;
@@ -8,9 +9,9 @@
   --button-hover: #1557b0;
   --button-active: #174ea6;
   --success-bg: #e6f4ea;
-  --success-color: #0b8043;
+  --success-color: #008000;
   --error-bg: #fce8e6;
-  --error-color: #d93025;
+  --error-color: #911108;
   --label-color: #5f6368;
 }
 
@@ -25,9 +26,9 @@
     --button-hover: #1557b0;
     --button-active: #174ea6;
     --success-bg: #1e3a2f;
-    --success-color: #81c995;
+    --success-color: #008000;
     --error-bg: #3c1a1a;
-    --error-color: #f28b82;
+    --error-color: #911108;
     --label-color: #9aa0a6;
   }
 }
@@ -48,8 +49,14 @@ body {
 
 h1 {
   margin: 0;
-  color: var(--button-bg);
-  font-size: 24px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 22px;
+  color: #38bdf8; 
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border-bottom: 2px solid #0ea5e9; 
+  padding-bottom: 8px;
+  margin-bottom: 16px;
   text-align: center;
 }
 
@@ -89,44 +96,63 @@ h2 {
 }
 
 button {
-  padding: 8px 16px;
-  background: var(--button-bg);
-  color: white;
-  border: none;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: #0ff;
+  background-color: transparent;
+  border: 2px solid #0ff;
+  padding: 10px 18px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
+  box-shadow: 0 0 5px #0ff;
+  transition: all 0.3s ease;
 }
 
 button:hover {
-  background: var(--button-hover);
+  background-color: rgba(0, 255, 255, 0.08);
+  box-shadow: 0 0 10px #0ff, 0 0 20px #0ff;
+  color: #ffffff;
 }
 
 button:active {
-  background: var(--button-active);
+  transform: scale(0.97);
+  box-shadow: 0 0 4px #0ff, 0 0 8px #0ff;
 }
 
 #saveApiKey {
-  background: var(--success-color);
+  /* background: var(--success-color); */
 }
 
 #saveApiKey:hover {
-  background: var(--success-color);
-  opacity: 0.9;
+  /* background: var(--success-color); */
+  /* opacity: 0.9; */
 }
 
 #changeApiKey {
-  background: var(--button-bg);
+  /* background: var(--button-bg); */
+  margin: 4px;
+}
+
+#changeApiKey:hover {
+  /* background: var(--button-bg); */
+  opacity: 0.9;
 }
 
 #removeApiKey {
-  background: var(--error-color);
+  /* background: var(--error-color); */
+  margin: 4px 3px;
+  border-color: #f43f5e;  
+  color: #f43f5e;
+  box-shadow: 0 0 6px #f43f5e;
 }
 
 #removeApiKey:hover {
-  background: var(--error-color);
-  opacity: 0.9;
+  /* background: var(--error-color); */
+  background-color: rgba(244, 63, 94, 0.08);
+  color: white;
+  box-shadow: 0 0 10px #f43f5e, 0 0 18px #f43f5e;
 }
 
 .setting-group {
@@ -170,6 +196,19 @@ select {
 #statusMessage.error {
   background: var(--error-bg);
   color: var(--error-color);
+}
+
+#apiKeyStatus{
+  margin: 3px 2px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 15px;
+  color: #00ffee;
+  text-shadow:
+    0 0 1px #00ffee,
+    0 0 3px #00ffee,
+    0 0 5px #8800ff; /* softer purple glow */
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
 }
 
 ol {
