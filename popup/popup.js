@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const translationStyle = document.getElementById('translationStyle');
     const languageLevel = document.getElementById('languageLevel');
     const saveSettings = document.getElementById('saveSettings');
+    const loader = document.getElementById('loading');
     
     // Check if API key exists
     const { groqApiKey } = await chrome.storage.local.get('groqApiKey');
@@ -19,7 +20,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   
     // Show API key is configured
-    apiKeyStatus.textContent = '✓ API Key Configured';
+    apiKeyStatus.textContent = 'API Key Configured';
     apiKeyStatus.style.color = '#4CAF50';
   
     // Load existing translation settings
@@ -33,10 +34,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     toggleApiKey.addEventListener('click', () => {
       if (apiKeyInput.type === 'password') {
         apiKeyInput.type = 'text';
-        toggleApiKey.textContent = '🙈';
+        toggleApiKey.innerText = 'Hide';
+        
       } else {
         apiKeyInput.type = 'password';
-        toggleApiKey.textContent = '👁️';
+        toggleApiKey.innerText = 'Show';
       }
     });
   
@@ -47,6 +49,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         showError('Please enter your API key');
         return;
       }
+
+      loader.style.display = "block";
+      saveApiKey.disabled = true;
   
       try {
         // Save API key first
@@ -81,12 +86,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         showSuccess('API key saved successfully');
         apiKeyInput.value = '';
         apiKeyContainer.style.display = 'none';
-        apiKeyStatus.textContent = '✓ API Key Configured';
-        apiKeyStatus.style.color = '#4CAF50';
+        apiKeyStatus.textContent = 'API Key Configured';
+        apiKeyStatus.style.color = '';
       } catch (error) {
         console.error('API key validation error:', error);
         await chrome.storage.local.remove('groqApiKey');
         showError(error.message || 'Failed to validate API key');
+      } finally {
+        loader.style.display = "none";
+        saveApiKey.disabled = false;
       }
     });
   
