@@ -1,3 +1,5 @@
+const loader = document.getElementById('loading');
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Check if API key exists
   const { groqApiKey } = await chrome.storage.local.get(['groqApiKey']);
@@ -19,6 +21,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       errorMessage.textContent = 'Please enter your API key';
       return;
     }
+    loader.style.display = "block";
+    saveButton.disabled = true;
 
     try {
       // Save API key first
@@ -54,6 +58,9 @@ document.addEventListener('DOMContentLoaded', async () => {
       // Remove invalid key
       await chrome.storage.local.remove(['groqApiKey']);
       errorMessage.textContent = error.message || 'Invalid API key. Please try again.';
+     } finally {
+      loader.style.display = 'none';
+      saveButton.disabled = false;
     }
   });
 });

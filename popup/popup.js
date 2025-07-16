@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const translationStyle = document.getElementById('translationStyle');
     const languageLevel = document.getElementById('languageLevel');
     const saveSettings = document.getElementById('saveSettings');
+    const loader = document.getElementById('loading');
     
     // Check if API key exists
     const { groqApiKey } = await chrome.storage.local.get('groqApiKey');
@@ -48,6 +49,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         showError('Please enter your API key');
         return;
       }
+
+      loader.style.display = "block";
+      saveApiKey.disabled = true;
   
       try {
         // Save API key first
@@ -88,6 +92,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('API key validation error:', error);
         await chrome.storage.local.remove('groqApiKey');
         showError(error.message || 'Failed to validate API key');
+      } finally {
+        loader.style.display = "none";
+        saveApiKey.disabled = false;
       }
     });
   

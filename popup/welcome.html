@@ -11,8 +11,14 @@
       <p>Please enter your Groq API key to enable translations:</p>
       <input type="password" id="apiKeyInput" placeholder="Enter your Groq API key">
       <button id="saveApiKey">Save Key</button>
-      <p class="note">Your key will be stored locally in Chrome and only used for translation requests.</p>
-      <p class="note">Don't have a key? <a href="https://groq.com/" target="_blank">Get one from Groq</a></p>
+
+      <div id="loading">
+        <div id="loadingIndicator" class="spinner"></div>
+        <div id="loadingText">Validating...</div>
+      </div>
+
+      <p class="note1">Your key will be stored locally in Chrome and only used for translation requests.</p>
+      <p class="note2">Don't have a key? <a href="https://groq.com/" target="_blank">Get one from Groq</a></p>
     </div>
   </div>
   <script src="welcome.js"></script>
