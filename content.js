@@ -44,37 +44,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   
   // Translate paragraph by paragraph
   async function translateParagraphs() {
-    const paragraphs = document.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, span, div');
-    let translatedCount = 0;
-    
-    for (let i = 0; i < paragraphs.length; i++) {
-      const element = paragraphs[i];
-      if (element.textContent.trim() && 
-          element.childNodes.length === 1 && 
-          element.childNodes[0].nodeType === Node.TEXT_NODE &&
-          !element.classList.contains('hinglish-translated')) {
-        
-        const originalText = element.textContent;
-        
-        try {
-          const response = await chrome.runtime.sendMessage({
-            action: "translateText",
-            text: originalText
-          });
-          
-          if (response && response !== "Please configure your API key first") {
-            element.textContent = response;
-            element.classList.add('hinglish-translated');
-            translatedCount++;
-          }
-        } catch (error) {
-          console.error('Translation error:', error);
-        }
-      }
-    }
-    
-    return translatedCount;
+    const paragraphs = Array.from(document.querySelectorAll('p, h1, h2, h3, h4, h5, h6, li, span, div'));
+    const textNodes= paragraphs.filter(el=>
+      el.textContent.trim() &&
+      el.childNodes.length===1 &&
+      el.childNodes[0].nodeType === Node.TEXT_NODE &&
+      !el.classList.contains('hinglish-translated')
+
+    );
+    const originalTexts = textNodes.map(el => el.textContent);
+    try {
+    const { translations, error } = await chrome.runtime.sendMessage({
+      action: "translateBatch",
+      texts: originalTexts
+    });
+
+    if (error) throw new Error(error);
+
+    textNodes.forEach((el, i) => {
+      el.textContent = translations[i];
+      el.classList.add('hinglish-translated');
+    });
+  } catch (error) {
+    console.error("Batch translation failed:", error);
   }
+}
+  
+        
+      
   
   // Translate all text nodes (more aggressive approach)
   async function translateAllText() {
