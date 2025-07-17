@@ -75,49 +75,64 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     
     return translatedCount;
   }
-  
+
+  //translate all text
   // Translate all text nodes (more aggressive approach)
-  async function translateAllText() {
-    const walker = document.createTreeWalker(
-      document.body,
-      NodeFilter.SHOW_TEXT,
-      null,
-      false
-    );
-    
-    let node;
-    const textNodes = [];
-    
-    while (node = walker.nextNode()) {
-      if (node.textContent.trim() && 
-          node.parentElement && 
-          !node.parentElement.classList.contains('hinglish-translated')) {
-        textNodes.push(node);
-      }
+async function translateAllText(batchSize = 3) {
+    console.time('translateAllText');
+  const walker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  );
+
+  let node;
+  const textNodes = [];
+
+  // Collect text nodes that should be translated
+  while (node = walker.nextNode()) {
+    if (
+      node.textContent.trim() &&
+      node.parentElement &&
+      !node.parentElement.classList.contains('hinglish-translated')
+    ) {
+      textNodes.push(node);
     }
-    
-    let translatedCount = 0;
-    
-    for (const node of textNodes) {
-      const originalText = node.textContent;
-      
-      try {
-        const response = await chrome.runtime.sendMessage({
-          action: "translateText",
-          text: originalText
-        });
-        
-        if (response && response !== "Please configure your API key first") {
-          node.textContent = response;
-          if (node.parentElement) {
-            node.parentElement.classList.add('hinglish-translated');
-          }
-          translatedCount++;
-        }
-      } catch (error) {
-        console.error('Translation error:', error);
-      }
-    }
-    
-    return translatedCount;
   }
+
+  let translatedCount = 0;
+
+  // Process in batches
+  for (let i = 0; i < textNodes.length; i += batchSize) {
+    const batch = textNodes.slice(i, i + batchSize);
+    const originalText = batch.map(n => n.textContent.trim());
+    const combineText = originalText.join("\n--SPLIT--\n");
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        action: "translateText",
+        text: combineText
+      });
+
+      if (response && response !== "Please configure your API key first") {
+        const translatedParts = response.split("\n---SPLIT---\n");
+
+        batch.forEach((node, index) => {
+          const translated = translatedParts[index]?.trim();
+          if (translated) {
+            node.textContent = translated;
+            node.parentElement?.classList.add("hinglish-translated");
+            translatedCount++;
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Batch translation error:", error);
+    }
+  }
+  console.timeEnd("translateAllText");
+  return translatedCount;
+}
+
+  

@@ -35,63 +35,81 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
-  if (info.menuItemId === "translateToHinglish" && info.selectionText) {
+  if (info.menuItemId === "translateToHinglish") {
     try {
-      // Show loading popup
-      chrome.scripting.executeScript({
+      // 1. Show loading popup
+      await chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        func: showLoadingPopup,
-        args: []
+        func: showLoadingPopup
       });
 
-      const translatedText = await translateText(info.selectionText);
-      
-      // Remove loading popup and show translation
-      chrome.scripting.executeScript({
+      // 2. Enhanced selection extraction (handles <li> elements gracefully)
+      const [{ result: selectedText }] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+          const selection = window.getSelection();
+          if (!selection || selection.rangeCount === 0) return '';
+
+          const range = selection.getRangeAt(0);
+          const fragment = range.cloneContents();
+          const container = document.createElement('div');
+          container.appendChild(fragment);
+
+          // Gather text with bullets if it's a list
+          const items = container.querySelectorAll('li');
+          if (items.length > 0) {
+            return Array.from(items).map(li => '• ' + li.innerText.trim()).join('\n');
+          }
+
+          // Fallback to plain text with preserved line breaks
+          return container.innerText || selection.toString();
+        }
+      });
+
+      if (!selectedText || selectedText.trim() === '') {
+        throw new Error("No text selected");
+      }
+
+      // 3. Format newline characters
+      const formattedText = selectedText.replace(/\n/g, '\n\n');
+
+      // 4. Translate the structured list text
+      const translatedText = await translateText(formattedText);
+
+      // 5. Show the translation popup
+      await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: showTranslationPopup,
-        args: [info.selectionText, translatedText]
-      });
-    } catch (error) {
-      console.error("Context menu translation error:", error);
-      // Show error in popup
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: showErrorPopup,
-        args: [error.message]
-      });
-    }
-  } else if (info.menuItemId === "explainInHinglish" && info.selectionText) {
-    try {
-      // Show loading popup
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: showLoadingPopup,
-        args: []
+        args: [selectedText, translatedText]
       });
 
-      const explanation = await explainText(info.selectionText);
-      
-      // Remove loading popup and show explanation
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: showExplanationPopup,
-        args: [info.selectionText, explanation]
-      });
     } catch (error) {
-      console.error("Context menu explanation error:", error);
-      // Show error in popup
-      chrome.scripting.executeScript({
+      console.error("Translation error:", error);
+      await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: showErrorPopup,
-        args: [error.message]
+        args: [error.message || "Something went wrong"]
       });
     }
   }
 });
 
+const promptCache={};
+
 // Function to get translation prompt based on style and level
 function getTranslationPrompt(style, level) {
+   
+
+   const structureInstruction = `
+  Keep the original structure, including:
+- Bullet points
+- Line breaks
+- Paragraphs
+- Indentation (if any)
+
+Do not remove or reorder items.
+Only respond with the translated text — no comments or explanations.
+`;
   const prompts = {
     hinglish: {
       balanced: "You are a translator that converts English text to Hinglish (Hindi written in English letters). Keep the meaning exactly the same but make it sound natural in Hinglish. Use a balanced mix of Hindi and English words. Only respond with the translated text, no explanations.",
@@ -120,7 +138,8 @@ function getTranslationPrompt(style, level) {
     }
   };
 
-  return prompts[style][level] || prompts.hinglish.balanced;
+   return       basePrompt=prompts[style]?.[level] || prompts.hinglish.balanced;
+ 
 }
 
 // Function to translate text using Groq API
@@ -133,7 +152,13 @@ async function translateText(text) {
 
   const style = translationSettings?.style || 'hinglish';
   const level = translationSettings?.level || 'balanced';
-  const prompt = getTranslationPrompt(style, level);
+  const baseprompt = getTranslationPrompt(style, level);
+
+    const prompt = `
+${basePrompt}
+
+If multiple sentences are provided separated by "--SPLIT--", translate each one individually in the same order. Separate translations using "---SPLIT---".
+  `.trim()
 
   try {
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -286,6 +311,121 @@ function showLoadingPopup() {
 }
 
 // Function to show translation popup
+function showTranslationPopup(originalText, translatedText) {
+  // Remove loading popup if it exists
+  const loadingPopup = document.getElementById('translationLoadingPopup');
+  if (loadingPopup) {
+    document.body.removeChild(loadingPopup);
+  }
+
+  // Remove existing popup if any
+  const oldPopup = document.querySelector('.hinglish-popup');
+  if (oldPopup) {
+    document.body.removeChild(oldPopup);
+  }
+
+  // Create popup container
+  const popup = document.createElement('div');
+  popup.className = 'hinglish-popup';
+  popup.style.position = 'fixed';
+  popup.style.zIndex = '9999';
+  popup.style.borderRadius = '8px';
+  popup.style.padding = '20px';
+  popup.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+  popup.style.maxWidth = '400px';
+  popup.style.fontFamily = 'Arial, sans-serif';
+  popup.style.fontSize = '14px';
+  popup.style.top = '50%';
+  popup.style.left = '50%';
+  popup.style.transform = 'translate(-50%, -50%)';
+
+  const isDarkMode = window.matchMedia &&
+                     window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+  popup.style.backgroundColor = isDarkMode ? '#2d2d2d' : '#ffffff';
+  popup.style.color = isDarkMode ? '#ffffff' : '#333333';
+  popup.style.border = isDarkMode ? '1px solid #444' : '1px solid #ddd';
+
+  // === Content container
+  const content = document.createElement('div');
+
+  const originalLabel = document.createElement('div');
+  originalLabel.style.fontWeight = 'bold';
+  originalLabel.style.marginBottom = '8px';
+  originalLabel.style.color = isDarkMode ? '#aaa' : '#666';
+  originalLabel.textContent = 'Original Text:';
+
+  const originalBox = document.createElement('div');
+  originalBox.style.background = isDarkMode ? '#3a3a3a' : '#f5f5f5';
+  originalBox.style.padding = '12px';
+  originalBox.style.borderRadius = '6px';
+  originalBox.style.marginBottom = '15px';
+  originalBox.style.lineHeight = '1.5';
+  originalBox.style.whiteSpace = 'pre-wrap';
+  originalBox.textContent = originalText;
+
+  const translatedLabel = document.createElement('div');
+  translatedLabel.style.fontWeight = 'bold';
+  translatedLabel.style.marginBottom = '8px';
+  translatedLabel.style.color = isDarkMode ? '#aaa' : '#666';
+  translatedLabel.textContent = 'Translation:';
+
+  const translatedBox = document.createElement('div');
+  translatedBox.style.background = isDarkMode ? '#1a3d6d' : '#e8f0fe';
+  translatedBox.style.padding = '12px';
+  translatedBox.style.borderRadius = '6px';
+  translatedBox.style.marginBottom = '15px';
+  translatedBox.style.lineHeight = '1.5';
+  translatedBox.style.whiteSpace = 'pre-wrap';
+  translatedBox.textContent = translatedText;
+
+  // Append to content
+  content.appendChild(originalLabel);
+  content.appendChild(originalBox);
+  content.appendChild(translatedLabel);
+  content.appendChild(translatedBox);
+
+  // === Close button
+  const buttonWrapper = document.createElement('div');
+  buttonWrapper.style.textAlign = 'right';
+
+  const closeButton = document.createElement('button');
+  closeButton.textContent = 'Close';
+  closeButton.style.cursor = 'pointer';
+  closeButton.style.padding = '8px 16px';
+  closeButton.style.background = '#1a73e8';
+  closeButton.style.color = 'white';
+  closeButton.style.border = 'none';
+  closeButton.style.borderRadius = '4px';
+  closeButton.style.fontSize = '14px';
+  closeButton.style.transition = 'background 0.2s';
+
+  closeButton.addEventListener('mouseenter', () => {
+    closeButton.style.background = '#0d5bc1';
+  });
+  closeButton.addEventListener('mouseleave', () => {
+    closeButton.style.background = '#1a73e8';
+  });
+  closeButton.addEventListener('click', () => {
+    document.body.removeChild(popup);
+  });
+
+  buttonWrapper.appendChild(closeButton);
+
+  // Final assembly
+  popup.appendChild(content);
+  popup.appendChild(buttonWrapper);
+  document.body.appendChild(popup);
+
+  // Optional: click outside to close
+  document.addEventListener('click', function outsideClick(e) {
+    if (!popup.contains(e.target)) {
+      document.body.removeChild(popup);
+      document.removeEventListener('click', outsideClick);
+    }
+  });
+}
+
 function showTranslationPopup(originalText, translatedText) {
   // Remove loading popup if it exists
   const loadingPopup = document.getElementById('translationLoadingPopup');
