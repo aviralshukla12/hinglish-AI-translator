@@ -2,7 +2,7 @@
 
 A powerful and intuitive Chrome extension that brings seamless translation and AI-powered explanations to your browsing experience. Transform any English text into Hinglish (Hindi written in English letters) or Hindi with just a right-click!
 
-## ✨ Features
+## ✨ Features ==
 
 ### 🎯 Smart Translation
 - **Multiple Translation Styles**
